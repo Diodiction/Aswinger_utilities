@@ -108,14 +108,22 @@ local isRainbowActive = false
 local rainbowSpeed = 0.005    
 local currentHue = 0.0       
 local isGtaPlusActive = false
-local isUnlockChameleonActive = false -- [추가됨] 카멜레온 해금 변수
+local isUnlockChameleonActive = false
+
+--Armor Variables
+local FillArmourActive = false
+local ArmourLoopDelay = 1000
+local AdditionalArmour = 0   
 
 -- 차량 감지 및 복구 변수
 local isPlayerInVehicle = false
 local currentVehicle = 0
 local originalColors = nil
 
--- [[ 2. 기능 함수 (Logic Functions) ]]
+
+
+
+-- Logic Functions
 
 function CaptureOriginalColors()
     if originalColors == nil and currentVehicle ~= 0 then
@@ -223,6 +231,17 @@ function ApplyCustomRGB()
     end)
 end
 
+local function RefillArmourNow()
+    local player = PLAYER.PLAYER_ID()
+    local ped = PLAYER.PLAYER_PED_ID()
+
+    local baseMax = 100
+    local targetArmour = baseMax + AdditionalArmour
+
+    PLAYER.SET_PLAYER_MAX_ARMOUR(player, targetArmour)
+    PED.SET_PED_ARMOUR(ped, targetArmour)
+end
+
 -- [[ 3. UI 그리기 (Drawing Loop) ]]
 menu.on_draw(function()
     if ImGui.BeginTabBar("Main_Tabs") then
@@ -296,7 +315,7 @@ menu.on_draw(function()
                 rainbowSpeed, _ = ImGui.SliderFloat("Rainbow Speed", rainbowSpeed, 0.0, 0.01, "%.4f")
             end
 
-            -- [추가됨] Section: Unlock Chameleon Paints
+            -- Section: Unlock Chameleon Paints
             ImGui.Spacing()
             ImGui.Separator()
             ImGui.Spacing()
@@ -311,6 +330,36 @@ menu.on_draw(function()
 
             ImGui.EndTabItem()
         end
+        
+
+        -- Tab 2: Player
+        if ImGui.BeginTabItem("Player") then
+            ImGui.TextColored(0.0, 1.0, 0.0, 1.0, "Local Player Stats")
+            ImGui.Separator()
+            ImGui.Spacing()
+
+            AdditionalArmour, _ = ImGui.SliderInt("Additional Armour (+)", AdditionalArmour, 0, 200)
+            ImGui.Spacing()
+            
+            if ImGui.Button("Fill Armour Max (Once)") then
+                RefillArmourNow()
+                notification.show("Armour Refilled (Max: " .. tostring(100 + AdditionalArmour) .. ")")
+            end
+
+            ImGui.Spacing()
+
+            -- 루프 활성화 체크박스
+            local changed
+            FillArmourActive, changed = ImGui.Checkbox("Auto Fill Armour (Loop)", FillArmourActive)
+            ImGui.SameLine()
+            ImGui.TextDisabled("(?) Keeps armour full")
+            ArmourLoopDelay, _ = ImGui.SliderInt("Loop Delay (ms)", ArmourLoopDelay, 0, 5000)
+            ImGui.Spacing()
+            ImGui.TextColored(0.5, 0.5, 0.5, 1.0, "Tip: 1000ms = 1 second")
+
+            ImGui.EndTabItem()
+        end
+
 
         -- [[ Tab 2: GTA+ & Misc ]]
         if ImGui.BeginTabItem("GTA+ & Misc") then
@@ -388,7 +437,7 @@ script.register_looped(function()
     script.yield(1000) -- no need to run this too frequently tho
 end)
 
--- [[ 7. 차량 감지 및 데이터 초기화 루프 ]]
+-- 차량 감지 및 데이터 초기화 루프 
 script.register_looped(function()
     local ped = PLAYER.PLAYER_PED_ID()
     if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
@@ -411,3 +460,14 @@ script.register_looped(function()
     end
     script.yield(100)
 end)
+
+
+
+script.register_looped(function()
+    if FillArmourActive then
+        RefillArmourNow()
+        script.yield(ArmourLoopDelay)
+    else
+        script.yield(0)
+    end        
+end) 
