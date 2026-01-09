@@ -114,6 +114,7 @@ local isUnlockChameleonActive = false
 local FillArmourActive = false
 local ArmourLoopDelay = 1000
 local AdditionalArmour = 0   
+local isFastRespawnActive = false
 
 -- 차량 감지 및 복구 변수
 local isPlayerInVehicle = false
@@ -242,11 +243,28 @@ local function RefillArmourNow()
     PED.SET_PED_ARMOUR(ped, targetArmour)
 end
 
--- [[ 3. UI 그리기 (Drawing Loop) ]]
+-- Helper for Requests
+local function TriggerGlobalRequest(globalId, requestName)
+    script.run_in_fiber(function()
+        globals.set_int(globalId, 1)
+        notification.show("Request Sent: " .. requestName)
+    end)
+end
+
+-- SecuroServ
+
+-- globals.set_int(1892798 + (player * 615) + 10, 0) -- SecuroServ VIP/CEO
+-- globals.set_int(1892798 + (player * 615) + 10, 1) -- SecuroServ Associate/Bodyguard
+ 
+-- Motorcycle Club President
+-- globals.set_int(1892798 + (player * 615) + 10, 0) -- MC President ? why is this same as VIP/CEO
+-- globals.set_int(1892798 + (player * 615) + 10 + 433, 1) -- MC Member
+
+-- Drawing Loop
 menu.on_draw(function()
     if ImGui.BeginTabBar("Main_Tabs") then
         
-        -- [[ Tab 1: Vehicle Colors ]]
+        -- Tab 1: Vehicle Colors 
         if ImGui.BeginTabItem("Vehicle Colors") then
             
             -- Section: Reset
@@ -348,7 +366,7 @@ menu.on_draw(function()
 
             ImGui.Spacing()
 
-            -- 루프 활성화 체크박스
+            -- Auto Fill Loop
             local changed
             FillArmourActive, changed = ImGui.Checkbox("Auto Fill Armour (Loop)", FillArmourActive)
             ImGui.SameLine()
@@ -357,9 +375,102 @@ menu.on_draw(function()
             ImGui.Spacing()
             ImGui.TextColored(0.5, 0.5, 0.5, 1.0, "Tip: 1000ms = 1 second")
 
+            ImGui.Spacing()
+            ImGui.Separator()
+            ImGui.Spacing()
+
+            --Fast Respawn Option
+            ImGui.TextColored(1.0, 0.0, 0.0, 1.0, "Respawn")
+            ImGui.Spacing()
+            
+            local changedRespawn
+            isFastRespawnActive, changedRespawn = ImGui.Checkbox("Fast Respawn", isFastRespawnActive)
+            if isFastRespawnActive then
+                ImGui.SameLine()
+                ImGui.TextDisabled("(Active)")
+            end
+
             ImGui.EndTabItem()
         end
 
+        -- Tab 3: Request (Services)
+        if ImGui.BeginTabItem("Request") then
+            ImGui.TextColored(0.0, 1.0, 1.0, 1.0, "Services & Vehicles")
+            ImGui.Separator()
+            ImGui.Spacing()
+
+            ImGui.Text("Service Vehicles")
+            if ImGui.Button("Request MOC") then TriggerGlobalRequest(2733138 + 577, "Mobile Operations Center") end
+            ImGui.SameLine()
+            if ImGui.Button("Request Avenger") then TriggerGlobalRequest(2733138 + 585, "Avenger") end
+            ImGui.SameLine()
+            if ImGui.Button("Request Terrorbyte") then TriggerGlobalRequest(2733138 + 591, "Terrorbyte") end
+            
+            if ImGui.Button("Request Kosatka") then TriggerGlobalRequest(2733138 + 613, "Kosatka") end
+            ImGui.SameLine()
+            if ImGui.Button("Request Acid Lab") then TriggerGlobalRequest(2733138 + 592, "Acid Lab") end
+            
+            ImGui.Spacing()
+            ImGui.Separator()
+            ImGui.Spacing()
+
+            ImGui.Text("Utility & Support")
+            if ImGui.Button("Request Dinghy") then TriggerGlobalRequest(2733138 + 626, "Dinghy") end
+            ImGui.SameLine()
+            if ImGui.Button("Request Taxi") then TriggerGlobalRequest(2733138 + 509, "Taxi") end
+            
+            if ImGui.Button("Request Acid Lab Bike") then TriggerGlobalRequest(2733138 + 648, "Acid Lab Bike") end
+            if ImGui.Button("Request Bail Transporter") then TriggerGlobalRequest(2733138 + 362, "Bail Office Transporter") end
+            
+            ImGui.Spacing()
+            if ImGui.Button("Request RC Bandito") then TriggerGlobalRequest(2733138 + 5828, "RC Bandito") end
+            ImGui.SameLine()
+            if ImGui.Button("Request RC Tank") then TriggerGlobalRequest(2733138 + 5829, "RC Tank") end
+
+            ImGui.Spacing()
+            ImGui.Separator()
+            ImGui.Spacing()
+
+            ImGui.Text("Pickups & Drops")
+            if ImGui.Button("Request Ammo Drop") then TriggerGlobalRequest(2733138 + 538, "Ammo Drop") end
+            if ImGui.Button("Request Bull Shark Testosterone") then TriggerGlobalRequest(2733138 + 546, "Bull Shark Testosterone") end
+            
+            ImGui.Spacing()
+            if ImGui.Button("Request Boat Pickup") then TriggerGlobalRequest(2733138 + 539, "Boat Pickup") end
+            ImGui.SameLine()
+            if ImGui.Button("Request Heli Pickup") then TriggerGlobalRequest(2733138 + 540, "Helicopter Pickup") end
+            
+            if ImGui.Button("Request Heli Pickup (SuperVolito)") then 
+                script.run_in_fiber(function()
+                    globals.set_int(2733138 + 547, 1) -- Set SuperVolito Flag
+                    globals.set_int(2733138 + 540, 1) -- Request Heli
+                    notification.show("Request Sent: SuperVolito Pickup") -- 여기도 직접 텍스트 수정
+                end)
+            end
+
+            ImGui.Spacing()
+            ImGui.Separator()
+            ImGui.Spacing()
+
+            ImGui.Text("Combat Support")
+            if ImGui.Button("Backup Helicopter") then TriggerGlobalRequest(2733138 + 3579, "Backup Helicopter") end
+            ImGui.SameLine()
+            if ImGui.Button("Cayo Heli Backup") then TriggerGlobalRequest(2733138 + 490, "Cayo Perico Support Heli") end
+            if ImGui.Button("Request Airstrike") then TriggerGlobalRequest(2733138 + 3580, "Airstrike") end
+
+            ImGui.Spacing()
+            ImGui.Text("Ballistic Equipment")
+            if ImGui.Button("Equip Ballistic") then TriggerGlobalRequest(2733138 + 548, "Ballistic Equipment") end
+            ImGui.SameLine()
+            if ImGui.Button("Remove Ballistic") then 
+                 script.run_in_fiber(function()
+                    globals.set_int(2733138 + 548, 2) -- Remove is value 2 (implied)
+                    notification.show("Request Sent: Remove Ballistic Equipment")
+                end)
+            end
+
+            ImGui.EndTabItem()
+        end
 
         -- [[ Tab 2: GTA+ & Misc ]]
         if ImGui.BeginTabItem("GTA+ & Misc") then
@@ -449,6 +560,7 @@ script.register_looped(function()
                 isPlayerInVehicle = true
                 originalColors = nil  
                 isRainbowActive = false 
+                VEHICLE.SET_VEHICLE_MAX_SPEED(currentVehicle, -1.0)
             end
         else
             isPlayerInVehicle = false
@@ -471,3 +583,27 @@ script.register_looped(function()
         script.yield(0)
     end        
 end) 
+
+script.register_looped(function()
+    if isFastRespawnActive then
+        -- Global_2673274.f_1762.f_756 = 2
+        -- 2673274 + 1762 + 756 = 2675792
+        globals.set_int(2675792, 2)
+    end
+    script.yield(0) -- 매 프레임 체크
+end)
+
+
+
+-- TESTING AREA
+-- globals.set_int(2733138 + 5828, 1) - request RE Bandito
+
+-- script.run_in_fiber(function()
+--     local safe = globals.get_int(262145 + 23773)
+--     local player = PLAYER.PLAYER_ID()
+
+--     notification.show("Safe: " .. safe)
+--     globals.set_int(262145 + 23773, 250000)
+--     globals.set_int(1845299 + (player * 883) + 260 + 364 +5, 250000)
+-- end)
+
